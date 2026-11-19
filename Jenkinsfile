@@ -1,38 +1,44 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE = 'flask-cicd'
+        TAG = "${BUILD_NUMBER}"
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                echo 'Getting source code from GitHub'
+                echo 'Source code downloaded from GitHub'
             }
         }
 
-        stage('Build') {
+        stage('Build Image') {
             steps {
-                echo 'Building Flask application'
+                sh 'docker build -t flask-cicd:${BUILD_NUMBER} .'
             }
         }
 
         stage('Test') {
             steps {
-                echo 'Testing Flask application'
+                sh 'docker run --rm flask-cicd:${BUILD_NUMBER} pytest -q'
             }
         }
 
         stage('Deploy') {
             steps {
-                echo 'Deployment stage completed'
+                sh 'docker rm -f flask-app || true'
+                sh 'docker run -d --name flask-app -p 5000:5000 flask-cicd:${BUILD_NUMBER}'
             }
         }
     }
 
     post {
         success {
-            echo 'CI/CD Pipeline completed successfully!'
+            echo 'Application deployed successfully!'
         }
         failure {
-            echo 'Pipeline failed'
+            echo 'Pipeline failed. Check Console Output.'
         }
     }
 }
